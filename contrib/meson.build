@@ -12,6 +12,7 @@ contrib_doc_args = {
   'install_dir': contrib_doc_dir,
 }
 
+subdir('test_crc32c')
 subdir('amcheck')
 subdir('auth_delay')
 subdir('auto_explain')

@@ -1,0 +1,4 @@
+comment = 'test'
+default_version = '1.0'
+module_pathname = '$libdir/test_crc32c'
+relocatable = true
