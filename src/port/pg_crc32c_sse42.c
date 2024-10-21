@@ -18,7 +18,10 @@
 
 #include "port/pg_crc32c.h"
 
+#if defined(USE_SSE42_CRC32C) || defined(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK)
+
 pg_attribute_no_sanitize_alignment()
+pg_attribute_target("sse4.2")
 pg_crc32c
 pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len)
 {
@@ -67,3 +70,4 @@ pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len)
 
 	return crc;
 }
+#endif // SSE42_CRC32

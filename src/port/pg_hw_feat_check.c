@@ -96,6 +96,9 @@ osxsave_available(void)
  * NB: Caller is responsible for verifying that osxsave_available() returns true
  * before calling this.
  */
+#ifdef HAVE_XSAVE_INTRINSICS
+pg_attribute_target("xsave")
+#endif
 inline static bool
 zmm_regs_available(void)
 {

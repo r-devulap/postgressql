@@ -57,7 +57,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#if defined(USE_AVX512_CRC32C_WITH_RUNTIME_CHECK)
+
 pg_attribute_no_sanitize_alignment()
+pg_attribute_target("avx512vl", "vpclmulqdq")
 inline pg_crc32c
 pg_comp_crc32c_avx512(pg_crc32c crc, const void *data, size_t length)
 {
@@ -195,3 +199,4 @@ pg_comp_crc32c_avx512(pg_crc32c crc, const void *data, size_t length)
 	 */
 	return pg_comp_crc32c_sse42(crc, input, length);
 }
+#endif // AVX512_CRC32

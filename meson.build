@@ -2233,9 +2233,10 @@ if host_cpu == 'x86' or host_cpu == 'x86_64'
     cdata.set('USE_SSE42_CRC32C_WITH_RUNTIME_CHECK', 1)
     have_optimized_crc = true
   else
-    avx_prog = '''
+    avx512_crc_prog = '''
 #include <immintrin.h>
 
+__attribute__((target("avx512vl","vpclmulqdq")))
 int main(void)
 {
   const unsigned long k1k2[8] = {
@@ -2262,9 +2263,12 @@ int main(void)
 }
 '''
 
-    prog = '''
+    sse42_crc_prog = '''
 #include <nmmintrin.h>
 
+#ifdef TEST_SSE42_WITH_ATTRIBUTE
+__attribute__((target("sse4.2")))
+#endif
 int main(void)
 {
     unsigned int crc = 0;
@@ -2274,27 +2278,23 @@ int main(void)
     return crc == 0;
 }
 '''
-
-    if cc.links(avx_prog,
-          name: '_mm512_clmulepi64_epi128 ... with -msse4.2 -mavx512vl -mvpclmulqdq',
-          args: test_c_args + ['-msse4.2', '-mavx512vl', '-mvpclmulqdq'])
-      cflags_crc += ['-msse4.2','-mavx512vl','-mvpclmulqdq']
-      cdata.set('USE_AVX512_CRC32C', false)
-      cdata.set('USE_AVX512_CRC32C_WITH_RUNTIME_CHECK', 1)
-      have_optimized_crc = true
-    endif
-    if have_optimized_crc == false and cc.links(prog, name: '_mm_crc32_u8 and _mm_crc32_u32 without -msse4.2',
+    if cc.links(sse42_crc_prog, name: 'CRC32C baseline feature SSE4.2 ',
           args: test_c_args)
       # Use Intel SSE 4.2 unconditionally.
       cdata.set('USE_SSE42_CRC32C', 1)
       have_optimized_crc = true
-    elif have_optimized_crc == false and cc.links(prog, name: '_mm_crc32_u8 and _mm_crc32_u32 with -msse4.2',
-          args: test_c_args + ['-msse4.2'])
+    elif cc.links(sse42_crc_prog, name: 'SSE4.2 CRC32C with function attributes',
+          args: test_c_args + ['-D TEST_SSE42_WITH_ATTRIBUTE'])
       # Use Intel SSE 4.2, with runtime check. The CPUID instruction is needed for
       # the runtime check.
-      cflags_crc += '-msse4.2'
       cdata.set('USE_SSE42_CRC32C', false)
       cdata.set('USE_SSE42_CRC32C_WITH_RUNTIME_CHECK', 1)
+      have_optimized_crc = true
+    endif
+    if cc.links(avx512_crc_prog,
+          name: 'AVX512 CRC32C with function attributes',
+          args: test_c_args)
+      cdata.set('USE_AVX512_CRC32C_WITH_RUNTIME_CHECK', 1)
       have_optimized_crc = true
     endif
 
