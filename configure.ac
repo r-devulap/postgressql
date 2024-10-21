@@ -2207,12 +2207,12 @@ if test x"$USE_SSE42_CRC32C" = x"1"; then
 else
   if test x"$USE_AVX512_CRC32C_WITH_RUNTIME_CHECK" = x"1"; then
     AC_DEFINE(USE_AVX512_CRC32C_WITH_RUNTIME_CHECK, 1, [Define to 1 to use Intel AVX 512 CRC instructions with a runtime check.])
-    PG_CRC32C_OBJS="pg_crc32c_avx512.o pg_crc32c_sb8.o pg_crc32c_sse42.o pg_crc32c_avx512_choose.o"
+    PG_CRC32C_OBJS="pg_crc32c_avx512.o pg_crc32c_sb8.o pg_crc32c_sse42.o pg_crc32c_x86_choose.o"
     AC_MSG_RESULT(AVX 512 with runtime check)
   else
     if test x"$USE_SSE42_CRC32C_WITH_RUNTIME_CHECK" = x"1"; then
       AC_DEFINE(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK, 1, [Define to 1 to use Intel SSE 4.2 CRC instructions with a runtime check.])
-      PG_CRC32C_OBJS="pg_crc32c_sse42.o pg_crc32c_sb8.o pg_crc32c_sse42_choose.o"
+      PG_CRC32C_OBJS="pg_crc32c_sse42.o pg_crc32c_sb8.o pg_crc32c_x86_choose.o"
       AC_MSG_RESULT(SSE 4.2 with runtime check)
     else
       if test x"$USE_ARMV8_CRC32C" = x"1"; then
