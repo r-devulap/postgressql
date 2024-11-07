@@ -18,6 +18,7 @@
  *-------------------------------------------------------------------------
  */
 
+
 #include "c.h"
 
 #ifdef HAVE__GET_CPUID
@@ -30,6 +31,7 @@
 
 #include "port/pg_crc32c.h"
 
+#if defined(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK)
 static bool
 pg_crc32c_sse42_available(void)
 {
@@ -62,3 +64,5 @@ pg_comp_crc32c_choose(pg_crc32c crc, const void *data, size_t len)
 }
 
 pg_crc32c	(*pg_comp_crc32c) (pg_crc32c crc, const void *data, size_t len) = pg_comp_crc32c_choose;
+
+#endif // USE_SSE42_CRC32C_WITH_RUNTIME_CHECK
