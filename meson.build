@@ -2234,9 +2234,11 @@ if host_cpu == 'x86' or host_cpu == 'x86_64'
     have_optimized_crc = true
   else
 
-    prog = '''
+    sse42_crc_prog = '''
 #include <nmmintrin.h>
-
+#ifdef TEST_SSE42_WITH_ATTRIBUTE
+__attribute__((target("sse4.2")))
+#endif
 int main(void)
 {
     unsigned int crc = 0;
@@ -2247,13 +2249,13 @@ int main(void)
 }
 '''
 
-    if cc.links(prog, name: '_mm_crc32_u8 and _mm_crc32_u32 without -msse4.2',
+    if cc.links(sse42_crc_prog, name: '_mm_crc32_u8 and _mm_crc32_u32 without -msse4.2',
           args: test_c_args)
       # Use Intel SSE 4.2 unconditionally.
       cdata.set('USE_SSE42_CRC32C', 1)
       have_optimized_crc = true
-    elif cc.links(prog, name: '_mm_crc32_u8 and _mm_crc32_u32 with -msse4.2',
-          args: test_c_args + ['-msse4.2'])
+    elif cc.links(sse42_crc_prog, name: '_mm_crc32_u8 and _mm_crc32_u32 with sse4.2 function attribute',
+          args: test_c_args + ['-D TEST_SSE42_WITH_ATTRIBUTE'])
       # Use Intel SSE 4.2, with runtime check. The CPUID instruction is needed for
       # the runtime check.
       cflags_crc += '-msse4.2'

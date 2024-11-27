@@ -23,6 +23,13 @@ pgport_sources = [
   'tar.c',
 ]
 
+if host_cpu == 'x86' or host_cpu == 'x86_64'
+  pgport_sources += files(
+  'pg_crc32c_sse42_choose.c',
+  'pg_crc32c_sse42.c',
+    )
+endif
+
 if host_system == 'windows'
   pgport_sources += files(
     'dirmod.c',
@@ -81,9 +88,6 @@ endif
 # is true
 replace_funcs_pos = [
   # x86/x64
-  ['pg_crc32c_sse42', 'USE_SSE42_CRC32C'],
-  ['pg_crc32c_sse42', 'USE_SSE42_CRC32C_WITH_RUNTIME_CHECK', 'crc'],
-  ['pg_crc32c_sse42_choose', 'USE_SSE42_CRC32C_WITH_RUNTIME_CHECK'],
   ['pg_crc32c_sb8', 'USE_SSE42_CRC32C_WITH_RUNTIME_CHECK'],
 
   # arm / aarch64

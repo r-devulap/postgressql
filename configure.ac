@@ -2065,13 +2065,9 @@ fi
 
 # Check for Intel SSE 4.2 intrinsics to do CRC calculations.
 #
-# First check if the _mm_crc32_u8 and _mm_crc32_u64 intrinsics can be used
-# with the default compiler flags. If not, check if adding the -msse4.2
-# flag helps. CFLAGS_CRC is set to -msse4.2 if that's required.
+# Check if the _mm_crc32_u8 and _mm_crc32_u64 intrinsics can be used
+# with the __attribute__((target("sse4.2"))).
 PGAC_SSE42_CRC32_INTRINSICS([])
-if test x"$pgac_sse42_crc32_intrinsics" != x"yes"; then
-  PGAC_SSE42_CRC32_INTRINSICS([-msse4.2])
-fi
 
 # Are we targeting a processor that supports SSE 4.2? gcc, clang and icc all
 # define __SSE4_2__ in that case.
