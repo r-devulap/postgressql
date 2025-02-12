@@ -41,6 +41,22 @@ pg_sse42_available(void)
 	return (exx[2] & (1 << 20)) != 0;	/* SSE 4.2 */
 }
 
+static bool
+pg_pclmul_available(void)
+{
+	unsigned int exx[4] = {0, 0, 0, 0};
+
+#if defined(HAVE__GET_CPUID)
+	__get_cpuid(1, &exx[0], &exx[1], &exx[2], &exx[3]);
+#elif defined(HAVE__CPUID)
+	__cpuid(exx, 1);
+#else
+#error cpuid instruction not available
+#endif
+
+	return (exx[2] & (1 << 1)) != 0;	/* PCLMUL */
+}
+
 /*
  * Check if hardware instructions for CRC computation are available.
  */
@@ -49,4 +65,11 @@ pg_cpucap_crc32c(void)
 {
 	if (pg_sse42_available())
 		pg_cpucap |= PGCPUCAP_CRC32C;
+}
+
+void
+pg_cpucap_clmul(void)
+{
+	if (pg_pclmul_available())
+		pg_cpucap |= PGCPUCAP_CLMUL;
 }

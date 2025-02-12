@@ -18,11 +18,13 @@
 #define PGCPUCAP_POPCNT         (1 << 1)
 #define PGCPUCAP_VPOPCNT        (1 << 2)
 #define PGCPUCAP_CRC32C         (1 << 3)
+#define PGCPUCAP_CLMUL          (1 << 4)
 
 extern PGDLLIMPORT uint32 pg_cpucap;
 extern void pg_cpucap_initialize(void);
 
 /* arch-specific functions private to src/port */
 extern void pg_cpucap_crc32c(void);
+extern void pg_cpucap_clmul(void);
 
 #endif							/* PG_CPUCAP_H */

@@ -111,3 +111,9 @@ pg_cpucap_crc32c(void)
 	if (pg_crc32c_armv8_available())
 		pg_cpucap |= PGCPUCAP_CRC32C;
 }
+
+void
+pg_cpucap_clmul(void)
+{
+	// WIP: does this even make sense?
+}

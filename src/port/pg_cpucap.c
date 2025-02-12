@@ -30,4 +30,5 @@ pg_cpucap_initialize(void)
 	pg_cpucap = PGCPUCAP_INIT;
 
 	pg_cpucap_crc32c();
+	pg_cpucap_clmul();
 }
