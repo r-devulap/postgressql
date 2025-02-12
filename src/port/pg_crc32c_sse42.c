@@ -79,49 +79,60 @@ pg_comp_crc32c_sse42_tail(pg_crc32c crc, const void *data, size_t len)
 
 pg_attribute_target("sse4.2,pclmul")
 pg_crc32c
-pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t length) {
+pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t length)
+{
 	/* adjust names to match generated code */
-	pg_crc32c crc0 = crc;
-	size_t len = length;
+	pg_crc32c	crc0 = crc;
+	size_t		len = length;
 	const unsigned char *buf = data;
 
-  if (len >= 128) {
-    /* First vector chunk. */
-    __m128i x0 = _mm_loadu_si128((const __m128i*)buf), y0;
-    __m128i x1 = _mm_loadu_si128((const __m128i*)(buf + 16)), y1;
-    __m128i x2 = _mm_loadu_si128((const __m128i*)(buf + 32)), y2;
-    __m128i x3 = _mm_loadu_si128((const __m128i*)(buf + 48)), y3;
-    __m128i k;
-    k = _mm_setr_epi32(0x740eef02, 0, 0x9e4addf8, 0);
-    x0 = _mm_xor_si128(_mm_cvtsi32_si128(crc0), x0);
-    buf += 64;
-    len -= 64;
-    /* Main loop. */
-    while (len >= 64) {
-      y0 = clmul_lo(x0, k), x0 = clmul_hi(x0, k);
-      y1 = clmul_lo(x1, k), x1 = clmul_hi(x1, k);
-      y2 = clmul_lo(x2, k), x2 = clmul_hi(x2, k);
-      y3 = clmul_lo(x3, k), x3 = clmul_hi(x3, k);
-      y0 = _mm_xor_si128(y0, _mm_loadu_si128((const __m128i*)buf)), x0 = _mm_xor_si128(x0, y0);
-      y1 = _mm_xor_si128(y1, _mm_loadu_si128((const __m128i*)(buf + 16))), x1 = _mm_xor_si128(x1, y1);
-      y2 = _mm_xor_si128(y2, _mm_loadu_si128((const __m128i*)(buf + 32))), x2 = _mm_xor_si128(x2, y2);
-      y3 = _mm_xor_si128(y3, _mm_loadu_si128((const __m128i*)(buf + 48))), x3 = _mm_xor_si128(x3, y3);
-      buf += 64;
-      len -= 64;
-    }
-    /* Reduce x0 ... x3 to just x0. */
-    k = _mm_setr_epi32(0xf20c0dfe, 0, 0x493c7d27, 0);
-    y0 = clmul_lo(x0, k), x0 = clmul_hi(x0, k);
-    y2 = clmul_lo(x2, k), x2 = clmul_hi(x2, k);
-    y0 = _mm_xor_si128(y0, x1), x0 = _mm_xor_si128(x0, y0);
-    y2 = _mm_xor_si128(y2, x3), x2 = _mm_xor_si128(x2, y2);
-    k = _mm_setr_epi32(0x3da6d0cb, 0, 0xba4fc28e, 0);
-    y0 = clmul_lo(x0, k), x0 = clmul_hi(x0, k);
-    y0 = _mm_xor_si128(y0, x2), x0 = _mm_xor_si128(x0, y0);
-    /* Reduce 128 bits to 32 bits, and multiply by x^32. */
-    crc0 = _mm_crc32_u64(0, _mm_extract_epi64(x0, 0));
-    crc0 = _mm_crc32_u64(crc0, _mm_extract_epi64(x0, 1));
-  }
+	if (len >= 128)
+	{
+		/* First vector chunk. */
+		__m128i		x0 = _mm_loadu_si128((const __m128i *) buf),
+					y0;
+		__m128i		x1 = _mm_loadu_si128((const __m128i *) (buf + 16)),
+					y1;
+		__m128i		x2 = _mm_loadu_si128((const __m128i *) (buf + 32)),
+					y2;
+		__m128i		x3 = _mm_loadu_si128((const __m128i *) (buf + 48)),
+					y3;
+		__m128i		k;
 
-  return pg_comp_crc32c_sse42_tail(crc0, buf, len);
+		k = _mm_setr_epi32(0x740eef02, 0, 0x9e4addf8, 0);
+		x0 = _mm_xor_si128(_mm_cvtsi32_si128(crc0), x0);
+		buf += 64;
+		len -= 64;
+
+		/* Main loop. */
+		while (len >= 64)
+		{
+			y0 = clmul_lo(x0, k), x0 = clmul_hi(x0, k);
+			y1 = clmul_lo(x1, k), x1 = clmul_hi(x1, k);
+			y2 = clmul_lo(x2, k), x2 = clmul_hi(x2, k);
+			y3 = clmul_lo(x3, k), x3 = clmul_hi(x3, k);
+			y0 = _mm_xor_si128(y0, _mm_loadu_si128((const __m128i *) buf)), x0 = _mm_xor_si128(x0, y0);
+			y1 = _mm_xor_si128(y1, _mm_loadu_si128((const __m128i *) (buf + 16))), x1 = _mm_xor_si128(x1, y1);
+			y2 = _mm_xor_si128(y2, _mm_loadu_si128((const __m128i *) (buf + 32))), x2 = _mm_xor_si128(x2, y2);
+			y3 = _mm_xor_si128(y3, _mm_loadu_si128((const __m128i *) (buf + 48))), x3 = _mm_xor_si128(x3, y3);
+			buf += 64;
+			len -= 64;
+		}
+
+		/* Reduce x0 ... x3 to just x0. */
+		k = _mm_setr_epi32(0xf20c0dfe, 0, 0x493c7d27, 0);
+		y0 = clmul_lo(x0, k), x0 = clmul_hi(x0, k);
+		y2 = clmul_lo(x2, k), x2 = clmul_hi(x2, k);
+		y0 = _mm_xor_si128(y0, x1), x0 = _mm_xor_si128(x0, y0);
+		y2 = _mm_xor_si128(y2, x3), x2 = _mm_xor_si128(x2, y2);
+		k = _mm_setr_epi32(0x3da6d0cb, 0, 0xba4fc28e, 0);
+		y0 = clmul_lo(x0, k), x0 = clmul_hi(x0, k);
+		y0 = _mm_xor_si128(y0, x2), x0 = _mm_xor_si128(x0, y0);
+
+		/* Reduce 128 bits to 32 bits, and multiply by x^32. */
+		crc0 = _mm_crc32_u64(0, _mm_extract_epi64(x0, 0));
+		crc0 = _mm_crc32_u64(crc0, _mm_extract_epi64(x0, 1));
+	}
+
+	return pg_comp_crc32c_sse42_tail(crc0, buf, len);
 }
