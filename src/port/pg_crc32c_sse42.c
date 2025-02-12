@@ -3,6 +3,10 @@
  * pg_crc32c_sse42.c
  *	  Compute CRC-32C checksum using Intel SSE 4.2 instructions.
  *
+ * 	  For longer inputs, we use carryless multiplication on SIMD registers,
+ *	  based on: "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ
+ *	  Instruction" V. Gopal, E. Ozturk, et al., 2009
+ *
  * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
