@@ -15,13 +15,14 @@
 #include "c.h"
 
 #include <nmmintrin.h>
+#include <wmmintrin.h>
 
 #include "port/pg_crc32c.h"
 
 pg_attribute_no_sanitize_alignment()
 pg_attribute_target("sse4.2")
-pg_crc32c
-pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len)
+static pg_crc32c
+pg_comp_crc32c_sse42_tail(pg_crc32c crc, const void *data, size_t len)
 {
 	const unsigned char *p = data;
 	const unsigned char *pend = p + len;
@@ -73,34 +74,18 @@ pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len)
 /* ./generate -i sse -p crc32c -a v4 */
 /* MIT licensed */
 
-#include <stddef.h>
-#include <stdint.h>
-#include <nmmintrin.h>
-#include <wmmintrin.h>
-
-#if defined(_MSC_VER)
-#define CRC_AINLINE static __forceinline
-#define CRC_ALIGN(n) __declspec(align(n))
-#else
-#define CRC_AINLINE static __inline __attribute__((always_inline))
-#define CRC_ALIGN(n) __attribute__((aligned(n)))
-#endif
-#define CRC_EXPORT extern
-
 #define clmul_lo(a, b) (_mm_clmulepi64_si128((a), (b), 0))
 #define clmul_hi(a, b) (_mm_clmulepi64_si128((a), (b), 17))
 
-CRC_EXPORT uint32_t crc32_impl(uint32_t crc0, const char* buf, size_t len) {
-  crc0 = ~crc0;
-  for (; len && ((uintptr_t)buf & 7); --len) {
-    crc0 = _mm_crc32_u8(crc0, *buf++);
-  }
-  if (((uintptr_t)buf & 8) && len >= 8) {
-    crc0 = _mm_crc32_u64(crc0, *(const uint64_t*)buf);
-    buf += 8;
-    len -= 8;
-  }
-  if (len >= 64) {
+pg_attribute_target("sse4.2,pclmul")
+pg_crc32c
+pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t length) {
+	/* adjust names to match generated code */
+	pg_crc32c crc0 = crc;
+	size_t len = length;
+	const unsigned char *buf = data;
+
+  if (len >= 128) {
     /* First vector chunk. */
     __m128i x0 = _mm_loadu_si128((const __m128i*)buf), y0;
     __m128i x1 = _mm_loadu_si128((const __m128i*)(buf + 16)), y1;
@@ -137,11 +122,6 @@ CRC_EXPORT uint32_t crc32_impl(uint32_t crc0, const char* buf, size_t len) {
     crc0 = _mm_crc32_u64(0, _mm_extract_epi64(x0, 0));
     crc0 = _mm_crc32_u64(crc0, _mm_extract_epi64(x0, 1));
   }
-  for (; len >= 8; buf += 8, len -= 8) {
-    crc0 = _mm_crc32_u64(crc0, *(const uint64_t*)buf);
-  }
-  for (; len; --len) {
-    crc0 = _mm_crc32_u8(crc0, *buf++);
-  }
-  return ~crc0;
+
+  return pg_comp_crc32c_sse42_tail(crc0, buf, len);
 }
