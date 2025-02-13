@@ -113,6 +113,7 @@ pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t length)
 	size_t		len = length;
 	const unsigned char *buf = data;
 
+#if SIZEOF_VOID_P >= 8
 	if (len >= PCLMUL_THRESHOLD)
 	{
 		/* First vector chunk. */
@@ -160,6 +161,7 @@ pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t length)
 		crc0 = _mm_crc32_u64(0, _mm_extract_epi64(x0, 0));
 		crc0 = _mm_crc32_u64(crc0, _mm_extract_epi64(x0, 1));
 	}
+#endif /* SIZEOF_VOID_P */
 
 	return pg_comp_crc32c_sse42_tail(crc0, buf, len);
 }
