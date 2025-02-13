@@ -23,6 +23,9 @@
 
 #include "port/pg_crc32c.h"
 
+#define PCLMUL_THRESHOLD 128
+#define CRC_CASE(n) do {crc = (uint32) _mm_crc32_u64(crc, *((const uint64 *) (p - (n)*sizeof(uint64_t))));} while(0)
+
 pg_attribute_no_sanitize_alignment()
 pg_attribute_target("sse4.2")
 static pg_crc32c
@@ -39,10 +42,30 @@ pg_comp_crc32c_sse42_tail(pg_crc32c crc, const void *data, size_t len)
 	 * the begin address.
 	 */
 #ifdef __x86_64__
-	while (p + 8 <= pend)
+
+	/* set p to end of last word boundary */
+	p = pend - len % (sizeof(uint64_t));
+	Assert (len < PCLMUL_THRESHOLD);
+
+	switch (len / sizeof(uint64_t))
 	{
-		crc = (uint32) _mm_crc32_u64(crc, *((const uint64 *) p));
-		p += 8;
+		case 15: CRC_CASE(15); /* FALLTHROUGH */
+		case 14: CRC_CASE(14); /* FALLTHROUGH */
+		case 13: CRC_CASE(13); /* FALLTHROUGH */
+		case 12: CRC_CASE(12); /* FALLTHROUGH */
+		case 11: CRC_CASE(11); /* FALLTHROUGH */
+		case 10: CRC_CASE(10); /* FALLTHROUGH */
+		case 9: CRC_CASE(9); /* FALLTHROUGH */
+		case 8: CRC_CASE(8); /* FALLTHROUGH */
+		case 7: CRC_CASE(7); /* FALLTHROUGH */
+		case 6: CRC_CASE(6); /* FALLTHROUGH */
+		case 5: CRC_CASE(5); /* FALLTHROUGH */
+		case 4: CRC_CASE(4); /* FALLTHROUGH */
+		case 3: CRC_CASE(3); /* FALLTHROUGH */
+		case 2: CRC_CASE(2); /* FALLTHROUGH */
+		case 1: CRC_CASE(1); /* FALLTHROUGH */
+		case 0: break;
+		default: pg_unreachable();
 	}
 
 	/* Process remaining full four bytes if any */
@@ -90,7 +113,7 @@ pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t length)
 	size_t		len = length;
 	const unsigned char *buf = data;
 
-	if (len >= 128)
+	if (len >= PCLMUL_THRESHOLD)
 	{
 		/* First vector chunk. */
 		__m128i		x0 = _mm_loadu_si128((const __m128i *) buf),
