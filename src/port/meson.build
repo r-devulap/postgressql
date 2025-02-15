@@ -7,6 +7,7 @@ pgport_sources = [
   'noblock.c',
   'path.c',
   'pg_bitutils.c',
+  'pg_cpucap.c',
   'pg_popcount_avx512.c',
   'pg_strong_random.c',
   'pgcheckdir.c',
@@ -83,12 +84,15 @@ replace_funcs_pos = [
   # x86/x64
   ['pg_crc32c_sse42', 'USE_SSE42_CRC32C'],
   ['pg_crc32c_sse42', 'USE_SSE42_CRC32C_WITH_RUNTIME_CHECK'],
+  # WIP sometime we'll need to build these based on host_cpu
+  ['pg_crc32c_sse42_choose', 'USE_SSE42_CRC32C'],
   ['pg_crc32c_sse42_choose', 'USE_SSE42_CRC32C_WITH_RUNTIME_CHECK'],
   ['pg_crc32c_sb8', 'USE_SSE42_CRC32C_WITH_RUNTIME_CHECK'],
 
   # arm / aarch64
   ['pg_crc32c_armv8', 'USE_ARMV8_CRC32C'],
   ['pg_crc32c_armv8', 'USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK', 'crc'],
+  ['pg_crc32c_armv8_choose', 'USE_ARMV8_CRC32C'],
   ['pg_crc32c_armv8_choose', 'USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK'],
   ['pg_crc32c_sb8', 'USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK'],
 

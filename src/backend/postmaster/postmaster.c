@@ -99,6 +99,7 @@
 #include "pg_getopt.h"
 #include "pgstat.h"
 #include "port/pg_bswap.h"
+#include "port/pg_cpucap.h"
 #include "postmaster/autovacuum.h"
 #include "postmaster/bgworker_internals.h"
 #include "postmaster/pgarch.h"
@@ -1951,6 +1952,9 @@ InitProcessGlobals(void)
 #ifndef WIN32
 	srandom(pg_prng_uint32(&pg_global_prng_state));
 #endif
+
+	/* detect CPU capabilities */
+	pg_cpucap_initialize();
 }
 
 /*

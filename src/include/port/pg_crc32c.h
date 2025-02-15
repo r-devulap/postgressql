@@ -34,6 +34,7 @@
 #define PG_CRC32C_H
 
 #include "port/pg_bswap.h"
+#include "port/pg_cpucap.h"
 
 typedef uint32 pg_crc32c;
 
@@ -41,51 +42,54 @@ typedef uint32 pg_crc32c;
 #define INIT_CRC32C(crc) ((crc) = 0xFFFFFFFF)
 #define EQ_CRC32C(c1, c2) ((c1) == (c2))
 
-#if defined(USE_SSE42_CRC32C)
+#if defined(USE_SSE42_CRC32C) || defined(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK)
 /* Use Intel SSE4.2 instructions. */
 #define COMP_CRC32C(crc, data, len) \
+	((crc) = pg_comp_crc32c_dispatch((crc), (data), (len)))
+#define COMP_CRC32C_HW(crc, data, len) \
 	((crc) = pg_comp_crc32c_sse42((crc), (data), (len)))
 #define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
 
+#if defined(USE_SSE42_CRC32C)
+#define HAVE_CRC_COMPTIME
+#else
+#define HAVE_CRC_RUNTIME
+extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
+#endif
+
+extern bool pg_crc32c_sse42_available(void);
 extern pg_crc32c pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len);
 
-#elif defined(USE_ARMV8_CRC32C)
+#elif defined(USE_ARMV8_CRC32C) || defined(USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK)
 /* Use ARMv8 CRC Extension instructions. */
 
 #define COMP_CRC32C(crc, data, len)							\
+	((crc) = pg_comp_crc32c_dispatch((crc), (data), (len)))
+#define COMP_CRC32C_HW(crc, data, len)						\
 	((crc) = pg_comp_crc32c_armv8((crc), (data), (len)))
 #define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
 
+#if defined(USE_ARMV8_CRC32C)
+#define HAVE_CRC_COMPTIME
+#else
+#define HAVE_CRC_RUNTIME
+extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
+#endif
+
+extern bool pg_crc32c_armv8_available(void);
 extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t len);
 
 #elif defined(USE_LOONGARCH_CRC32C)
 /* Use LoongArch CRCC instructions. */
 
 #define COMP_CRC32C(crc, data, len)							\
+	((crc) = pg_comp_crc32c_dispatch((crc), (data), (len)))
+#define COMP_CRC32C_HW(crc, data, len)						\
 	((crc) = pg_comp_crc32c_loongarch((crc), (data), (len)))
 #define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
 
+#define HAVE_CRC_COMPTIME
 extern pg_crc32c pg_comp_crc32c_loongarch(pg_crc32c crc, const void *data, size_t len);
-
-#elif defined(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK) || defined(USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK)
-
-/*
- * Use Intel SSE 4.2 or ARMv8 instructions, but perform a runtime check first
- * to check that they are available.
- */
-#define COMP_CRC32C(crc, data, len) \
-	((crc) = pg_comp_crc32c((crc), (data), (len)))
-#define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
-
-extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
-extern pg_crc32c (*pg_comp_crc32c) (pg_crc32c crc, const void *data, size_t len);
-
-#ifdef USE_SSE42_CRC32C_WITH_RUNTIME_CHECK
-extern pg_crc32c pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len);
-#endif
-#ifdef USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK
-extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t len);
-#endif
 
 #else
 /*
@@ -105,6 +109,36 @@ extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t le
 
 extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
 
+#endif							/* end of CPU-specfic symbols */
+
+#if defined(HAVE_CRC_COMPTIME) || defined(HAVE_CRC_RUNTIME)
+/*
+ * Check if the CPU we're running on supports special
+ * instructions for CRC-32C computation. Otherwise, fall
+ * back to the pure software implementation (slicing-by-8).
+ */
+static inline pg_crc32c
+pg_comp_crc32c_dispatch(pg_crc32c crc, const void *data, size_t len)
+{
+	/*
+	 * If this is firing in a frontend program, first look if you forgot a
+	 * call to pg_cpucap_initialize() in main(). See for example
+	 * src/bin/pg_controldata/pg_controldata.c.
+	 */
+	// WIP: how to best intialize in frontend?
+#ifndef FRONTEND
+	Assert(pg_cpucap & PGCPUCAP_INIT);
 #endif
+
+#if defined(HAVE_CRC_COMPTIME)
+	return COMP_CRC32C_HW(crc, data, len);
+#else
+	if (pg_cpucap & PGCPUCAP_CRC32C)
+		return COMP_CRC32C_HW(crc, data, len);
+	else
+		return pg_comp_crc32c_sb8(crc, data, len);
+#endif
+}
+#endif							/* HAVE_CRC_COMPTIME || HAVE_CRC_RUNTIME */
 
 #endif							/* PG_CRC32C_H */
