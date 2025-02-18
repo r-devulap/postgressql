@@ -17059,14 +17059,19 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <nmmintrin.h>
+    #include <wmmintrin.h>
     #if defined(__has_attribute) && __has_attribute (target)
-    __attribute__((target("sse4.2")))
+    __attribute__((target("sse4.2,pclmul")))
     #endif
     static int crc32_sse42_test(void)
+
     {
+      __m128i x1 = _mm_set1_epi32(1);
       unsigned int crc = 0;
       crc = _mm_crc32_u8(crc, 0);
       crc = _mm_crc32_u32(crc, 0);
+      x1 = _mm_clmulepi64_si128(x1, x1, 0x00);
+      crc = crc + _mm_extract_epi32(x1, 1);
       /* return computed value, to prevent the above being optimized away */
       return crc == 0;
     }

@@ -33,6 +33,7 @@
 #ifndef PG_CRC32C_H
 #define PG_CRC32C_H
 
+#include "pg_cpu.h"
 #include "port/pg_bswap.h"
 
 typedef uint32 pg_crc32c;
@@ -40,52 +41,36 @@ typedef uint32 pg_crc32c;
 /* The INIT and EQ macros are the same for all implementations. */
 #define INIT_CRC32C(crc) ((crc) = 0xFFFFFFFF)
 #define EQ_CRC32C(c1, c2) ((c1) == (c2))
-
-#if defined(USE_SSE42_CRC32C)
-/* Use Intel SSE4.2 instructions. */
-#define COMP_CRC32C(crc, data, len) \
-	((crc) = pg_comp_crc32c_sse42((crc), (data), (len)))
 #define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
 
+/* x86 / x86_64 */
+#if defined(PG_CPU_X86) || defined(PG_CPU_x86_64)
+extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
 extern pg_crc32c pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len);
-
-#elif defined(USE_ARMV8_CRC32C)
-/* Use ARMv8 CRC Extension instructions. */
-
-#define COMP_CRC32C(crc, data, len)							\
-	((crc) = pg_comp_crc32c_armv8((crc), (data), (len)))
-#define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
-
-extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t len);
-
-#elif defined(USE_LOONGARCH_CRC32C)
-/* Use LoongArch CRCC instructions. */
-
-#define COMP_CRC32C(crc, data, len)							\
-	((crc) = pg_comp_crc32c_loongarch((crc), (data), (len)))
-#define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
-
-extern pg_crc32c pg_comp_crc32c_loongarch(pg_crc32c crc, const void *data, size_t len);
-
-#elif defined(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK) || defined(USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK)
-
-/*
- * Use Intel SSE 4.2 or ARMv8 instructions, but perform a runtime check first
- * to check that they are available.
- */
+extern pg_crc32c pg_comp_crc32c_pclmul(pg_crc32c crc, const void *data, size_t len);
+extern pg_crc32c (*pg_comp_crc32c) (pg_crc32c crc, const void *data, size_t len);
 #define COMP_CRC32C(crc, data, len) \
 	((crc) = pg_comp_crc32c((crc), (data), (len)))
-#define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
 
-extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
-extern pg_crc32c (*pg_comp_crc32c) (pg_crc32c crc, const void *data, size_t len);
-
-#ifdef USE_SSE42_CRC32C_WITH_RUNTIME_CHECK
-extern pg_crc32c pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len);
-#endif
-#ifdef USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK
+/* ARMV8 */
+#elif defined(USE_ARMV8_CRC32C)
 extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t len);
-#endif
+#define COMP_CRC32C(crc, data, len)							\
+	((crc) = pg_comp_crc32c_armv8((crc), (data), (len)))
+
+/* ARMV8 with runtime check */
+#elif defined(USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK)
+extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
+extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t len);
+extern pg_crc32c (*pg_comp_crc32c) (pg_crc32c crc, const void *data, size_t len);
+#define COMP_CRC32C(crc, data, len) \
+	((crc) = pg_comp_crc32c((crc), (data), (len)))
+
+/* LoongArch */
+#elif defined(USE_LOONGARCH_CRC32C)
+extern pg_crc32c pg_comp_crc32c_loongarch(pg_crc32c crc, const void *data, size_t len);
+#define COMP_CRC32C(crc, data, len)							\
+	((crc) = pg_comp_crc32c_loongarch((crc), (data), (len)))
 
 #else
 /*
@@ -98,13 +83,11 @@ extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t le
 #define COMP_CRC32C(crc, data, len) \
 	((crc) = pg_comp_crc32c_sb8((crc), (data), (len)))
 #ifdef WORDS_BIGENDIAN
+#undef FIN_CRC32C
 #define FIN_CRC32C(crc) ((crc) = pg_bswap32(crc) ^ 0xFFFFFFFF)
-#else
-#define FIN_CRC32C(crc) ((crc) ^= 0xFFFFFFFF)
 #endif
 
 extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
-
 #endif
 
 #endif							/* PG_CRC32C_H */

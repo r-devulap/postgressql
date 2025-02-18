@@ -557,14 +557,19 @@ AC_DEFUN([PGAC_SSE42_CRC32_INTRINSICS],
 [define([Ac_cachevar], [AS_TR_SH([pgac_cv_sse42_crc32_intrinsics])])dnl
 AC_CACHE_CHECK([for _mm_crc32_u8 and _mm_crc32_u32], [Ac_cachevar],
 [AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <nmmintrin.h>
+    #include <wmmintrin.h>
     #if defined(__has_attribute) && __has_attribute (target)
-    __attribute__((target("sse4.2")))
+    __attribute__((target("sse4.2,pclmul")))
     #endif
     static int crc32_sse42_test(void)
+
     {
+      __m128i x1 = _mm_set1_epi32(1);
       unsigned int crc = 0;
       crc = _mm_crc32_u8(crc, 0);
       crc = _mm_crc32_u32(crc, 0);
+      x1 = _mm_clmulepi64_si128(x1, x1, 0x00); // pclmul
+      crc = crc + _mm_extract_epi32(x1, 1);
       /* return computed value, to prevent the above being optimized away */
       return crc == 0;
     }],

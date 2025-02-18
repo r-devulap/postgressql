@@ -2222,12 +2222,32 @@ if host_cpu == 'x86' or host_cpu == 'x86_64'
   if cc.get_id() == 'msvc'
     cdata.set('USE_SSE42_CRC32C', false)
     cdata.set('USE_SSE42_CRC32C_WITH_RUNTIME_CHECK', 1)
+    cdata.set('USE_PCLMUL_CRC32C', false)
+    cdata.set('USE_PCLMUL_CRC32C_WITH_RUNTIME_CHECK', 1)
     have_optimized_crc = true
   else
 
-    prog = '''
+    pclmulprog = '''
 #include <nmmintrin.h>
-
+#include <wmmintrin.h>
+#if defined(__has_attribute) && __has_attribute (target)
+__attribute__((target("sse4.2,pclmul")))
+#endif
+int main(void)
+{
+    __m128i x1 = _mm_set1_epi32(1);
+    unsigned int crc = 0;
+    crc = _mm_crc32_u8(crc, 0);
+    crc = _mm_crc32_u32(crc, 0);
+    x1 = _mm_clmulepi64_si128(x1, x1, 0x00); // pclmul
+    crc = crc + _mm_extract_epi32(x1, 1);
+    /* return computed value, to prevent the above being optimized away */
+    return crc == 0;
+}
+'''
+    
+    sse42prog = '''
+#include <nmmintrin.h>
 #if defined(__has_attribute) && __has_attribute (target)
 __attribute__((target("sse4.2")))
 #endif
@@ -2241,18 +2261,33 @@ int main(void)
 }
 '''
 
-    if not cc.links(prog, name: '_mm_crc32_u8 and _mm_crc32_u32',
+    if not cc.links(sse42prog, name: 'crc32c computation with sse42',
           args: test_c_args)
       # Do not use Intel SSE 4.2
     elif (cc.get_define('__SSE4_2__') != '')
-      # Use Intel SSE 4.2 unconditionally.
+      # Use Intel SSE4.2 unconditionally.
       cdata.set('USE_SSE42_CRC32C', 1)
       have_optimized_crc = true
     else
-      # Use Intel SSE 4.2, with runtime check. The CPUID instruction is needed for
-      # the runtime check.
+      # Use Intel SSE 4.2, with runtime check.
+      # The CPUID instruction is needed for the runtime check.
       cdata.set('USE_SSE42_CRC32C', false)
       cdata.set('USE_SSE42_CRC32C_WITH_RUNTIME_CHECK', 1)
+      have_optimized_crc = true
+    endif
+
+    if not cc.links(pclmulprog, name: 'crc32c computation with pclmul & sse42',
+          args: test_c_args)
+      # Do not use Intel SSE 4.2 or PCLMUL
+    elif (cc.get_define('__SSE4_2__') != '') and (cc.get_define('__PCLMUL__') != '')
+      # Use Intel PCLMUL and SSE4.2 unconditionally.
+      cdata.set('USE_PCLMUL_CRC32C', 1)
+      have_optimized_crc = true
+    else
+      # Use Intel PCLMUL/SSE 4.2, with runtime check.
+      # The CPUID instruction is needed for the runtime check.
+      cdata.set('USE_PCLMUL_CRC32C', false)
+      cdata.set('USE_PCLMUL_CRC32C_WITH_RUNTIME_CHECK', 1)
       have_optimized_crc = true
     endif
 
