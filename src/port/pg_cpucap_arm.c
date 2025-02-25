@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
  *
- * pg_crc32c_armv8_choose.c
+ * pg_cpucap_arm.c
  *	  Check if the CPU we're running on supports the ARMv8 CRC Extension.
  *
  * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
@@ -8,7 +8,7 @@
  *
  *
  * IDENTIFICATION
- *	  src/port/pg_crc32c_armv8_choose.c
+ *	  src/port/pg_cpucap_arm.c
  *
  *-------------------------------------------------------------------------
  */
@@ -35,7 +35,7 @@
 
 #include "port/pg_crc32c.h"
 
-bool
+static bool
 pg_crc32c_armv8_available(void)
 {
 #if defined(HAVE_ELF_AUX_INFO)
@@ -100,4 +100,14 @@ pg_crc32c_armv8_available(void)
 #else
 	return false;
 #endif
+}
+
+/*
+ * Check if hardware instructions for CRC computation are available.
+ */
+void
+pg_cpucap_crc32c(void)
+{
+	if (pg_crc32c_armv8_available())
+		pg_cpucap |= PGCPUCAP_CRC32C;
 }

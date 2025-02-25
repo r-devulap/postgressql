@@ -22,4 +22,7 @@
 extern PGDLLIMPORT uint32 pg_cpucap;
 extern void pg_cpucap_initialize(void);
 
+/* arch-specific functions private to src/port */
+extern void pg_cpucap_crc32c(void);
+
 #endif							/* PG_CPUCAP_H */

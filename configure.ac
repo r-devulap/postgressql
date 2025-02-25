@@ -2115,7 +2115,7 @@ if test x"$USE_SSE42_CRC32C" = x"1"; then
 else
   if test x"$USE_SSE42_CRC32C_WITH_RUNTIME_CHECK" = x"1"; then
     AC_DEFINE(USE_SSE42_CRC32C_WITH_RUNTIME_CHECK, 1, [Define to 1 to use Intel SSE 4.2 CRC instructions with a runtime check.])
-    PG_CRC32C_OBJS="pg_crc32c_sse42.o pg_crc32c_sb8.o pg_crc32c_sse42_choose.o"
+    PG_CRC32C_OBJS="pg_crc32c_sse42.o pg_crc32c_sb8.o
     AC_MSG_RESULT(SSE 4.2 with runtime check)
   else
     if test x"$USE_ARMV8_CRC32C" = x"1"; then
@@ -2125,7 +2125,7 @@ else
     else
       if test x"$USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK" = x"1"; then
         AC_DEFINE(USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK, 1, [Define to 1 to use ARMv8 CRC Extension with a runtime check.])
-        PG_CRC32C_OBJS="pg_crc32c_armv8.o pg_crc32c_sb8.o pg_crc32c_armv8_choose.o"
+        PG_CRC32C_OBJS="pg_crc32c_armv8.o pg_crc32c_sb8.o
         AC_MSG_RESULT(ARMv8 CRC instructions with runtime check)
       else
         if test x"$USE_LOONGARCH_CRC32C" = x"1"; then

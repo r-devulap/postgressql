@@ -45,6 +45,8 @@ OBJS = \
 	path.o \
 	pg_bitutils.o \
 	pg_cpucap.o \
+	pg_cpucap_x86.o \
+	pg_cpucap_arm.o \
 	pg_popcount_avx512.o \
 	pg_strong_random.o \
 	pgcheckdir.o \

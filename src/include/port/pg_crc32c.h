@@ -57,7 +57,6 @@ typedef uint32 pg_crc32c;
 extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
 #endif
 
-extern bool pg_crc32c_sse42_available(void);
 extern pg_crc32c pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t len);
 
 #elif defined(USE_ARMV8_CRC32C) || defined(USE_ARMV8_CRC32C_WITH_RUNTIME_CHECK)
@@ -76,7 +75,6 @@ extern pg_crc32c pg_comp_crc32c_sse42(pg_crc32c crc, const void *data, size_t le
 extern pg_crc32c pg_comp_crc32c_sb8(pg_crc32c crc, const void *data, size_t len);
 #endif
 
-extern bool pg_crc32c_armv8_available(void);
 extern pg_crc32c pg_comp_crc32c_armv8(pg_crc32c crc, const void *data, size_t len);
 
 #elif defined(USE_LOONGARCH_CRC32C)

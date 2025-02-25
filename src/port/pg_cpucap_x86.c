@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
  *
- * pg_crc32c_sse42_choose.c
+ * pg_cpucap_x86.c
  *	  Check if the CPU we're running on supports SSE4.2.
  *
  * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
@@ -8,7 +8,7 @@
  *
  *
  * IDENTIFICATION
- *	  src/port/pg_crc32c_sse42_choose.c
+ *	  src/port/pg_cpucap_x86.c
  *
  *-------------------------------------------------------------------------
  */
@@ -23,10 +23,10 @@
 #include <intrin.h>
 #endif
 
-#include "port/pg_crc32c.h"
+#include "port/pg_cpucap.h"
 
-bool
-pg_crc32c_sse42_available(void)
+static bool
+pg_sse42_available(void)
 {
 	unsigned int exx[4] = {0, 0, 0, 0};
 
@@ -39,4 +39,14 @@ pg_crc32c_sse42_available(void)
 #endif
 
 	return (exx[2] & (1 << 20)) != 0;	/* SSE 4.2 */
+}
+
+/*
+ * Check if hardware instructions for CRC computation are available.
+ */
+void
+pg_cpucap_crc32c(void)
+{
+	if (pg_sse42_available())
+		pg_cpucap |= PGCPUCAP_CRC32C;
 }
